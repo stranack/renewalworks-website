@@ -1,0 +1,28 @@
+name: Deploy to Bluehost
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy site over SFTP
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload to Bluehost
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+        with:
+          username: stranack
+          server: renewalworks.ca
+          port: 22
+          local_path: "./*"
+          remote_path: "/public_html/RenewalWorks"
+          sftp_only: true
+          password: ${{ secrets.BLUEHOST_SFTP_PASSWORD }}
+          delete_remote_files: false
+          rsyncArgs: "--exclude=.git --exclude=.github --exclude=.gitignore"
+          sftpArgs: "-o ConnectTimeout=10"
