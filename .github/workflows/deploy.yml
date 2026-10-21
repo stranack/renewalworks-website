@@ -8,21 +8,30 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy site over SFTP
+    name: Deploy via cPanel Git Version Control
+    env:
+      CPANEL_HOST: renewalworks.ca
+      CPANEL_USER: stranack
+      REPO_ROOT: /home/stranack/repositories/renewalworks-website
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Pull latest commit into cPanel-managed repo
+        run: |
+          resp=$(curl -sS -H "Authorization: cpanel ${CPANEL_USER}:${{ secrets.BLUEHOST_CPANEL_API_TOKEN }}" \
+            "https://${CPANEL_HOST}:2083/execute/VersionControl/update?repository_root=${REPO_ROOT}&branch=main")
+          echo "$resp"
+          status=$(echo "$resp" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status',0))" 2>/dev/null || echo 0)
+          if [ "$status" != "1" ]; then
+            echo "::error::VersionControl::update did not report success"
+            exit 1
+          fi
 
-      - name: Upload to Bluehost
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
-        with:
-          username: stranack
-          server: renewalworks.ca
-          port: 22
-          local_path: "./*"
-          remote_path: "/public_html/RenewalWorks"
-          sftp_only: true
-          ssh_private_key: ${{ secrets.BLUEHOST_SSH_PRIVATE_KEY }}
-          delete_remote_files: false
-          rsyncArgs: "--exclude=.git --exclude=.github --exclude=.gitignore"
-          sftpArgs: "-o ConnectTimeout=10"
+      - name: Deploy HEAD commit (.cpanel.yml tasks)
+        run: |
+          resp=$(curl -sS -H "Authorization: cpanel ${CPANEL_USER}:${{ secrets.BLUEHOST_CPANEL_API_TOKEN }}" \
+            "https://${CPANEL_HOST}:2083/execute/VersionControlDeployment/create?repository_root=${REPO_ROOT}")
+          echo "$resp"
+          status=$(echo "$resp" | python3 -c "import json,sys;print(json.load(sys.stdin).get('status',0))" 2>/dev/null || echo 0)
+          if [ "$status" != "1" ]; then
+            echo "::error::VersionControlDeployment::create did not report success"
+            exit 1
+          fi
