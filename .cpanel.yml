@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/stranack/public_html/RenewalWorks/
+    - export DEPLOYPATH=/home3/stranack/public_html/RenewalWorks/
     - /bin/cp -R * $DEPLOYPATH

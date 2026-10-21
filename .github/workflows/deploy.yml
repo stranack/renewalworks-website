@@ -12,7 +12,7 @@ jobs:
     env:
       CPANEL_HOST: renewalworks.ca
       CPANEL_USER: stranack
-      REPO_ROOT: /home/stranack/repositories/renewalworks-website
+      REPO_ROOT: /home3/stranack/repositories/renewalworks-website
     steps:
       - name: Pull latest commit into cPanel-managed repo
         run: |
