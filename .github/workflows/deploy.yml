@@ -18,7 +18,7 @@ jobs:
         with:
           username: stranack
           server: renewalworks.ca
-          port: 22
+          port: 2222
           local_path: "./*"
           remote_path: "/public_html/RenewalWorks"
           sftp_only: true
