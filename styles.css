@@ -1,0 +1,1112 @@
+/* ==========================================================================
+   RenewalWorks Consulting
+   Flat, one-page, responsive — no media queries.
+   Layout comes from intrinsic techniques: fluid clamp() scales, Grid
+   auto-fit/minmax, subgrid, named areas, container queries and cqi units,
+   Flexbox wrapping (cluster, sidebar, switcher), multi-column, sticky.
+   ========================================================================== */
+
+:root {
+  /* Palette.
+     Plum carries white text at 9.6:1 and reads as text on white at the same ratio.
+     --accent-deep is the hover shade.
+     --grey-600 is the lightest grey that still carries white body text at 4.5:1 (4.54:1). */
+  --accent: #6e2a62;
+  --accent-deep: #4e1d45;
+  --on-accent: #ffffff;
+  --black: #0d0d0d;
+  --white: #ffffff;
+  --grey-800: #444444;
+  --grey-600: #767676;
+  --grey-500: #6e6e6e;
+  --grey-300: #bdbdbd;
+  --grey-100: #ececec;
+
+  /* Section tokens: sections swap these instead of restyling children */
+  --ink: var(--black);
+  --paper: var(--white);
+
+  /* Type */
+  --font-display: "Anton", Impact, "Arial Narrow Bold", sans-serif;
+  --font-body: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Fluid type scale: min at ~320px, max at ~1440px */
+  --step--1: clamp(0.8rem, 0.77rem + 0.13vw, 0.9rem);
+  --step-0: clamp(1rem, 0.96rem + 0.22vw, 1.15rem);
+  --step-1: clamp(1.15rem, 1.06rem + 0.45vw, 1.45rem);
+  --step-2: clamp(1.4rem, 1.2rem + 0.95vw, 2.05rem);
+  --step-3: clamp(1.85rem, 1.45rem + 2vw, 3.2rem);
+  --step-4: clamp(2.6rem, 1.8rem + 4vw, 5.5rem);
+
+  /* Fluid space scale */
+  --space-xs: clamp(0.5rem, 0.45rem + 0.25vw, 0.75rem);
+  --space-s: clamp(0.75rem, 0.65rem + 0.5vw, 1.25rem);
+  --space-m: clamp(1.25rem, 1.05rem + 1vw, 2rem);
+  --space-l: clamp(2rem, 1.55rem + 2.25vw, 3.75rem);
+  --space-xl: clamp(3.5rem, 2.6rem + 4.5vw, 7.5rem);
+
+  --gutter: clamp(1rem, 0.6rem + 2vw, 3rem);
+  --wrap: 84rem;
+  --measure: 62ch;
+  --rule: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-block-start: 6rem; /* keeps anchored headings clear of the sticky header */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400; /* Anton ships a single heavy weight */
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+p,
+ul,
+dl,
+dd,
+figure,
+blockquote {
+  margin: 0;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-inline-size: 100%;
+  block-size: auto;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus, var(--black));
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  inset-block-start: -10rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: var(--accent-deep);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  inset-block-start: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   Layout primitives
+   -------------------------------------------------------------------------- */
+
+/* Centred wrapper: min() gives a fluid width with a hard maximum, no breakpoint */
+.wrap {
+  inline-size: min(100% - 2 * var(--gutter), var(--wrap));
+  margin-inline: auto;
+}
+
+/* Vertical rhythm between siblings */
+.flow > * + * {
+  margin-block-start: var(--flow-space, 1.25em);
+}
+
+/* Cluster: items wrap onto new lines when they run out of room */
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-s);
+}
+
+/* Sidebar: side-by-side until the main column would drop below 55%, then stacks */
+.with-sidebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-l);
+}
+
+.with-sidebar > :first-child {
+  flex-basis: 18rem;
+  flex-grow: 1;
+}
+
+.with-sidebar > :last-child {
+  flex-basis: 0;
+  flex-grow: 999;
+  min-inline-size: 55%;
+}
+
+/* At-most-two grid: auto-fit where each column is at least --min wide AND at least half the row,
+   so four items fall into 1 column on narrow screens and a 2 x 2 block everywhere else,
+   never 3 + 1 or four columns too narrow to read */
+.grid-max-2 {
+  --gap: var(--space-m);
+  display: grid;
+  gap: var(--gap);
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, max(var(--min, 21rem), (100% - var(--gap)) / 2 - 1px)), 1fr)
+  );
+}
+
+/* Switcher: every item flips from a row to a column at once, at a 38rem threshold */
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  padding: 0;
+  list-style: none;
+}
+
+.switcher > * {
+  flex-grow: 1;
+  flex-basis: calc((38rem - 100%) * 999);
+}
+
+/* --------------------------------------------------------------------------
+   Sections
+   -------------------------------------------------------------------------- */
+
+.section {
+  padding-block: var(--space-xl);
+}
+
+.section--grey {
+  background: var(--grey-100);
+}
+
+.section--accent {
+  --ink: var(--on-accent);
+  --paper: var(--accent);
+  --focus: var(--on-accent);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.section-head {
+  display: grid;
+  gap: var(--space-s);
+  max-inline-size: 50rem;
+  margin-block-end: var(--space-l);
+}
+
+.section-head h2 {
+  font-size: var(--step-4);
+}
+
+/* One-line introduction under a section heading */
+.section-intro {
+  max-inline-size: var(--measure);
+  font-size: var(--step-1);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.section-intro a {
+  font-weight: 800;
+}
+
+/* Closing line under the focus-area cards */
+.section-outro {
+  margin-block-start: var(--space-l);
+  max-inline-size: var(--measure);
+  font-size: var(--step-1);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.section-outro a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-block-size: 3rem;
+  padding: 0.85rem 1.4rem;
+  border: 2px solid var(--btn-border, transparent);
+  background: var(--btn-bg, transparent);
+  color: var(--btn-fg, currentColor);
+  max-inline-size: 100%; /* on the very narrowest phones a long label wraps rather than overflowing */
+  font: 800 1.1875rem / 1.15 var(--font-body);
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn--accent {
+  --btn-bg: var(--accent);
+  --btn-fg: var(--on-accent);
+}
+
+.btn--outline {
+  --btn-border: var(--ink);
+  --btn-fg: var(--ink);
+}
+
+.btn--accent:hover,
+.btn--outline:hover {
+  --btn-bg: var(--accent-deep);
+  --btn-fg: var(--white);
+  --btn-border: var(--accent-deep);
+}
+
+/* On an accent background an accent button would disappear, so it inverts */
+.section--accent .btn--accent {
+  --btn-bg: var(--white);
+  --btn-fg: var(--accent);
+}
+
+.section--accent .btn--accent:hover {
+  --btn-bg: var(--accent-deep);
+  --btn-fg: var(--white);
+  --btn-border: var(--white);
+}
+
+/* --------------------------------------------------------------------------
+   Logo (typeset, so it stays sharp at any size)
+   -------------------------------------------------------------------------- */
+
+.logo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5em 0.55em 0.55em;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  line-height: 0.9;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.logo-line--1 {
+  font-size: 1.28em;
+  letter-spacing: 0.01em;
+}
+
+.logo-line--2 {
+  font-size: 1.72em;
+  letter-spacing: 0.02em;
+}
+
+.logo-sub {
+  margin-block-start: 0.45em;
+  margin-inline-end: -0.62em; /* cancels trailing letter-spacing so it centres */
+  font-family: var(--font-body);
+  font-size: 0.4em;
+  font-weight: 800;
+  letter-spacing: 0.62em;
+}
+
+/* --------------------------------------------------------------------------
+   Header — named grid areas, rearranged by a container query
+   -------------------------------------------------------------------------- */
+
+.site-header {
+  container: header / inline-size;
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+  background: var(--white);
+  border-block-end: 1px solid var(--grey-100);
+}
+
+.header-inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "logo cta"
+    "nav  nav";
+  align-items: center;
+  gap: 0.4rem 1.5rem;
+  padding-block: 0.6rem 0.2rem;
+}
+
+.site-header .logo {
+  grid-area: logo;
+  font-size: 0.82rem;
+}
+
+.header-cta {
+  grid-area: cta;
+  justify-self: end;
+  min-block-size: 2.5rem;
+  padding: 0.6rem 1rem;
+}
+
+.site-nav {
+  grid-area: nav;
+}
+
+.site-nav ul {
+  display: flex;
+  gap: clamp(0.875rem, 2.4vw, 2.25rem);
+  padding: 0;
+  list-style: none;
+  overflow-x: auto; /* one scrollable row on narrow screens */
+  scrollbar-width: none;
+}
+
+.site-nav li {
+  flex: none;
+}
+
+.site-nav a,
+.footer-nav a {
+  display: inline-block;
+  padding-block: 0.55rem;
+  border-block-end: 3px solid transparent;
+  font-size: var(--step--1);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+/* Slightly smaller on phones so the links fit on one row */
+.site-nav a {
+  font-size: clamp(0.75rem, 0.6rem + 0.6vw, 0.9rem);
+}
+
+.site-nav a:hover,
+.footer-nav a:hover {
+  border-color: var(--accent);
+}
+
+/* On phones there is only room for four links, so "How we work" stays in the footer menu */
+@container header (max-width: 36rem) {
+  .site-nav .nav-extra {
+    display: none;
+  }
+}
+
+@container header (min-width: 46rem) {
+  .header-inner {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "logo nav cta";
+    padding-block: 0.75rem;
+  }
+
+  .site-nav ul {
+    justify-content: flex-end;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Hero — named areas + container query, headline sized in cqi units
+   -------------------------------------------------------------------------- */
+
+.hero {
+  container: hero / inline-size;
+  padding-block: clamp(1.5rem, 4vh + 0.5rem, 4rem) var(--space-l);
+  padding-block: clamp(1.5rem, 4svh + 0.5rem, 4rem) var(--space-l);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-areas:
+    "lines"
+    "strategy"
+    "lead"
+    "actions"
+    "clients"
+    "belief";
+  gap: var(--space-m) var(--space-l);
+}
+
+/* The smallest of three sizes wins:
+   - a hard cap of 7rem;
+   - width: the longest line (~10.3em in Anton, "You've got a lot going on.") always fits on one row;
+   - height: the two lines (~2.6em including gaps) plus everything else on the
+     first screen fit in the viewport, so it sits above the fold on desktop.
+     A 2.75rem floor stops it shrinking too far on very short windows.
+     svh excludes mobile browser toolbars; vh is the fallback.
+   The wide layout below re-states this for the narrower headline column. */
+.hero-lines {
+  grid-area: lines;
+  display: grid;
+  row-gap: 0.14em;
+  font-size: min(7rem, min(100cqi - 2 * var(--gutter), var(--wrap)) / 10.6, max(2.75rem, (100vh - 30rem) / 2.6));
+  font-size: min(7rem, min(100cqi - 2 * var(--gutter), var(--wrap)) / 10.6, max(2.75rem, (100svh - 30rem) / 2.6));
+  line-height: 1;
+}
+
+.hero-lines .accent {
+  margin-block-start: 0.2em; /* a little room before the answer line */
+  color: var(--accent);
+}
+
+/* Second level of the hero: what we do and for whom. Smaller than the headline, larger than the paragraph. */
+.hero-strategy {
+  grid-area: strategy;
+  max-inline-size: 32ch;
+  font-size: var(--step-2);
+  font-weight: 800;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+/* Third level: proof strip under the buttons */
+.hero-clients {
+  grid-area: clients;
+  max-inline-size: var(--measure);
+  color: var(--grey-800);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+.hero-clients a {
+  color: var(--accent);
+  font-weight: 800;
+  text-underline-offset: 0.2em;
+}
+
+.hero-lead {
+  grid-area: lead;
+  max-inline-size: var(--measure);
+  font-size: var(--step-0);
+  line-height: 1.6;
+}
+
+.hero-actions {
+  grid-area: actions;
+}
+
+/* White card with a solid (unblurred) offset shadow in the accent colour.
+   The right margin keeps the shadow inside the page gutter. */
+.hero-belief {
+  --offset: 0.75rem;
+  grid-area: belief;
+  margin-inline-end: var(--offset);
+  padding: var(--space-m);
+  border: 3px solid var(--accent);
+  background: var(--white);
+  color: var(--black);
+  box-shadow: var(--offset) var(--offset) 0 var(--accent);
+  font-size: var(--step-0);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.belief-kicker {
+  display: block;
+  margin-block-end: 0.35em;
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 400;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+/* Wide: the belief block sits beside the headline, its base level with the last
+   headline line; lead and buttons run underneath the headline */
+@container hero (min-width: 56rem) {
+  .hero-grid {
+    --belief-w: clamp(18rem, 30cqi, 27rem);
+    grid-template-columns: minmax(0, 1fr) var(--belief-w);
+    grid-template-areas:
+      "lines    belief"
+      "strategy belief"
+      "lead     belief"
+      "actions  belief"
+      "clients  belief";
+    align-items: start;
+  }
+
+  /* Width term now uses the headline column (wrapper minus gap minus belief block);
+     the height term only has to leave room for header, lead and buttons (~24rem) */
+  .hero-lines {
+    font-size: min(
+      7rem,
+      (min(100cqi - 2 * var(--gutter), var(--wrap)) - var(--space-l) - var(--belief-w)) / 10.6,
+      max(2.75rem, (100vh - 28rem) / 2.6)
+    );
+    font-size: min(
+      7rem,
+      (min(100cqi - 2 * var(--gutter), var(--wrap)) - var(--space-l) - var(--belief-w)) / 10.6,
+      max(2.75rem, (100svh - 28rem) / 2.6)
+    );
+  }
+
+  .hero-belief {
+    align-self: center;
+  }
+
+  .hero-strategy {
+    margin-block-start: var(--space-s);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Cards — white panel with an accent top stripe, shared by Focus Areas and Services
+   -------------------------------------------------------------------------- */
+
+.card {
+  padding: var(--space-m);
+  border-block-start: var(--rule) solid var(--accent);
+  background: var(--white);
+  color: var(--black);
+}
+
+/* On an accent background the stripe would vanish, so cards go plain, like the quote cards */
+.section--accent .card {
+  border-block-start: 0;
+}
+
+.card h3 {
+  font-size: var(--step-3);
+}
+
+/* --------------------------------------------------------------------------
+   Focus Areas — auto-fit grid, rows aligned across cards with subgrid
+   -------------------------------------------------------------------------- */
+
+.focus-card {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid; /* heading, problem and detail line up across the row */
+  row-gap: var(--space-s);
+}
+
+.focus-problem {
+  font-size: var(--step-1);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.focus-card p:last-child {
+  color: var(--grey-800);
+}
+
+/* --------------------------------------------------------------------------
+   Services — auto-fit columns; each column is a query container
+   -------------------------------------------------------------------------- */
+
+.service-col {
+  container: service / inline-size;
+}
+
+.service-col h3 {
+  margin-block-end: var(--space-xs);
+}
+
+.service {
+  display: grid;
+  gap: 0.35rem;
+  padding-block: var(--space-s);
+  border-block-end: 1px solid var(--grey-300);
+}
+
+.service:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
+}
+
+.service dt {
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.service dd {
+  color: var(--grey-800);
+}
+
+/* When a column gets wide (a single column on a tablet), name and detail sit side by side */
+@container service (min-width: 34rem) {
+  .service {
+    grid-template-columns: 13rem 1fr;
+    gap: var(--space-m);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Approach — sticky heading beside the text once there is room
+   -------------------------------------------------------------------------- */
+
+.approach {
+  container: approach / inline-size;
+}
+
+.approach-grid {
+  display: grid;
+  gap: 0 var(--space-l);
+}
+
+@container approach (min-width: 52rem) {
+  .approach-grid {
+    grid-template-columns: minmax(14rem, 1fr) minmax(0, 2.2fr);
+    align-items: start;
+  }
+
+  .approach-grid > .section-head {
+    position: sticky;
+    inset-block-start: 7rem;
+  }
+}
+
+.approach-body {
+  max-inline-size: 48rem;
+}
+
+.lead {
+  font-size: var(--step-1);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.pull {
+  --flow-space: var(--space-l);
+  padding-block: 0.3em;
+  padding-inline-start: var(--space-m);
+  border-inline-start: var(--rule) solid var(--accent);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  line-height: 1.12;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.values {
+  --flow-space: var(--space-l);
+}
+
+.values h3 {
+  margin-block-end: var(--space-s);
+  font-size: var(--step-2);
+}
+
+.value {
+  padding: var(--space-m);
+  border-block-start: var(--rule) solid var(--accent);
+  background: var(--grey-600);
+  color: var(--white);
+}
+
+.value p {
+  font-size: var(--step-1);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.call-box {
+  --flow-space: var(--space-l);
+  display: grid;
+  justify-items: start;
+  gap: var(--space-m);
+  padding: var(--space-m);
+  background: var(--grey-100);
+}
+
+/* --------------------------------------------------------------------------
+   Clients — CSS multi-column, as many columns as fit
+   -------------------------------------------------------------------------- */
+
+.client-list {
+  columns: 17rem;
+  column-gap: var(--space-l);
+  column-rule: 1px solid var(--grey-300);
+  padding: 0;
+  list-style: none;
+}
+
+/* Clients grouped by type: groups sit in a grid, each list reads as a single column */
+.client-groups {
+  columns: 20rem 3; /* groups flow top-to-bottom into up to three balanced columns */
+  column-gap: var(--space-l);
+}
+
+.client-group {
+  break-inside: avoid;
+  margin-block-end: var(--space-l);
+}
+
+.client-group h3 {
+  margin-block-end: var(--space-xs);
+  font-size: var(--step-2);
+}
+
+.client-group .client-list {
+  columns: 1;
+  column-rule: 0;
+}
+
+.client-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding-block: 0.6rem;
+  border-block-end: 1px solid var(--grey-300);
+  break-inside: avoid;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.client-list li::before {
+  content: "";
+  flex: none;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  background: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   Testimonials — featured quote spans the grid and sets its text in columns
+   -------------------------------------------------------------------------- */
+
+.quote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  padding: var(--space-m);
+  background: var(--white);
+  color: var(--black);
+}
+
+.quote-stack {
+  display: grid;
+  gap: var(--space-m);
+}
+
+/* Masonry-style: quotes of very different lengths flow into at most two balanced
+   columns (each at least 22rem), reading top-to-bottom, so no card is padded out
+   to match a longer neighbour */
+.quote-columns {
+  columns: 22rem 2;
+  column-gap: var(--space-m);
+}
+
+.quote-columns > .quote {
+  break-inside: avoid;
+  margin-block-end: var(--space-m);
+}
+
+.quote-mark {
+  block-size: 0.5em;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 5rem;
+  line-height: 1;
+}
+
+.quote blockquote {
+  font-size: var(--step-0);
+  font-weight: 500;
+}
+
+.quote--featured blockquote {
+  columns: 24rem 2; /* at most two columns, each at least 24rem wide */
+  column-gap: var(--space-l);
+  font-size: var(--step-1);
+  line-height: 1.5;
+}
+
+.quote figcaption {
+  margin-block-start: auto;
+  padding-block-start: 0.75rem;
+  border-block-start: 2px solid var(--black);
+  font-size: var(--step--1);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   About — each bio is a query container: photo beside text when wide
+   -------------------------------------------------------------------------- */
+
+.bio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
+  gap: var(--space-l);
+}
+
+.bio {
+  container: bio / inline-size;
+}
+
+.bio-inner {
+  display: grid;
+  gap: var(--space-m);
+}
+
+@container bio (min-width: 32rem) {
+  .bio-inner {
+    grid-template-columns: 11rem 1fr;
+    align-items: start;
+  }
+}
+
+.bio-photo {
+  display: grid;
+  place-items: center;
+  inline-size: min(100%, 14rem);
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: var(--grey-600);
+  box-shadow: 0.6rem 0.6rem 0 var(--accent); /* solid offset block, no blur */
+}
+
+.bio-photo img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+}
+
+.bio-text {
+  display: grid;
+  gap: var(--space-s);
+}
+
+.bio-text h3 {
+  font-size: var(--step-3);
+}
+
+.bio-text p {
+  max-inline-size: var(--measure);
+}
+
+.bio-link a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-block: 0.25rem; /* comfortable tap target */
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 2px;
+}
+
+.bio-link a:hover,
+.bio-link a:focus-visible {
+  text-decoration-line: underline;
+}
+
+.bio-link-icon {
+  flex: none;
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  fill: currentColor;
+}
+
+/* Hidden visually but still read by screen readers */
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Contact form
+   -------------------------------------------------------------------------- */
+
+/* Wraps the form and its thank-you panel so the pair stays the sidebar layout's main column */
+.contact-body {
+  max-inline-size: 50rem;
+}
+
+/* Shown by form.js in place of the form once Formspree accepts the message */
+.contact-thanks {
+  padding: var(--space-m);
+  background: var(--white);
+  color: var(--black);
+  font-size: var(--step-1);
+}
+
+.contact-thanks-title {
+  margin-block-end: 0.25em;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.btn:disabled {
+  cursor: progress;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-m);
+}
+
+.field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.field--full {
+  grid-column: 1 / -1;
+}
+
+.field label {
+  font-size: var(--step--1);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field textarea {
+  inline-size: 100%;
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--white);
+  border-radius: 0;
+  background: var(--white);
+  color: var(--black);
+  font: inherit;
+}
+
+.field textarea {
+  min-block-size: 10rem;
+  resize: vertical;
+}
+
+.field-trap {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+
+.site-footer {
+  padding-block: var(--space-l);
+  border-block-start: var(--rule) solid var(--accent);
+  background: var(--white);
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m) var(--space-l);
+}
+
+.logo--footer {
+  font-size: 1.1rem;
+}
+
+.footer-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.footer-meta {
+  flex-basis: 100%;
+  padding-block-start: var(--space-s);
+  border-block-start: 1px solid var(--grey-100);
+  color: var(--grey-500);
+  font-size: var(--step--1);
+}
+
+/* --------------------------------------------------------------------------
+   What we help with — each area card holds the problem and the services together
+   -------------------------------------------------------------------------- */
+
+.area {
+  display: grid;
+  grid-row: span 5;
+  grid-template-rows: subgrid; /* heading, problem, detail, label and list line up across the row */
+  row-gap: var(--space-s);
+}
+
+.area > p:not(.focus-problem) {
+  color: var(--grey-800);
+}
+
+.area-label {
+  margin-block-start: var(--space-s);
+  padding-block-start: var(--space-s);
+  border-block-start: 2px solid var(--black);
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: var(--step--1);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.area .service-list {
+  container: service / inline-size;
+}
+
+.area .service-list > .service:first-child {
+  padding-block-start: var(--space-xs);
+}
+
+.area-label {
+  align-self: end;
+}
+
+/* Keeps a hyphenated word together in headings */
+.nowrap {
+  white-space: nowrap;
+}
