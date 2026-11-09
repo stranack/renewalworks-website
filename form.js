@@ -1,8 +1,10 @@
 // Sends the contact form to Formspree in the background so visitors stay on the page
-// and see a thank-you message. Without JavaScript, or if the background send fails,
-// the form falls back to a normal submission and Formspree shows its own page.
+// and see a thank-you message. If the send fails, the visitor stays here too and gets
+// an error with our email address, rather than being handed off to Formspree's page.
+// Without JavaScript the form posts normally and Formspree shows its own confirmation.
 const form = document.querySelector('.contact-form');
 const thanks = document.getElementById('contact-thanks');
+const error = document.getElementById('contact-error');
 
 if (form && thanks) {
   const button = form.querySelector('button[type="submit"]');
@@ -12,6 +14,7 @@ if (form && thanks) {
     const label = button.innerHTML;
     button.disabled = true;
     button.textContent = 'Sending…';
+    if (error) error.hidden = true;
 
     try {
       const response = await fetch(form.action, {
@@ -24,10 +27,14 @@ if (form && thanks) {
       form.hidden = true;
       thanks.hidden = false;
       thanks.focus();
-    } catch (error) {
+    } catch (err) {
       button.disabled = false;
       button.innerHTML = label;
-      form.submit(); // does not fire the submit event again, so no loop
+      if (error) {
+        error.hidden = false;
+      } else {
+        form.submit(); // last resort: hand off to Formspree's own page
+      }
     }
   });
 }

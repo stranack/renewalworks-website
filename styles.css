@@ -392,11 +392,10 @@ img {
 
 .site-nav ul {
   display: flex;
-  gap: clamp(0.875rem, 2.4vw, 2.25rem);
+  flex-wrap: wrap; /* wraps to a second row on narrow screens rather than scrolling out of sight */
+  gap: 0 clamp(0.875rem, 2.4vw, 2.25rem);
   padding: 0;
   list-style: none;
-  overflow-x: auto; /* one scrollable row on narrow screens */
-  scrollbar-width: none;
 }
 
 .site-nav li {
@@ -423,13 +422,6 @@ img {
 .site-nav a:hover,
 .footer-nav a:hover {
   border-color: var(--accent);
-}
-
-/* On phones there is only room for four links, so "How we work" stays in the footer menu */
-@container header (max-width: 36rem) {
-  .site-nav .nav-extra {
-    display: none;
-  }
 }
 
 @container header (min-width: 46rem) {
@@ -979,6 +971,20 @@ img {
   text-transform: uppercase;
 }
 
+/* Shown by form.js when the background send fails, so the visitor stays on the page */
+.contact-error {
+  margin-block-start: var(--space-m);
+  padding: var(--space-s) var(--space-m);
+  border-inline-start: var(--rule) solid var(--accent);
+  background: var(--white);
+  color: var(--black);
+  font-weight: 500;
+}
+
+.contact-error a {
+  color: var(--accent);
+}
+
 .btn:disabled {
   cursor: progress;
 }
@@ -1109,4 +1115,29 @@ img {
 /* Keeps a hyphenated word together in headings */
 .nowrap {
   white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Legal pages (privacy)
+   -------------------------------------------------------------------------- */
+
+.legal-body {
+  max-inline-size: var(--measure);
+}
+
+.legal-body h3 {
+  margin-block-start: var(--space-m);
+  font-size: var(--step-1);
+}
+
+.legal-body a {
+  color: var(--accent);
+}
+
+.legal-updated {
+  margin-block-start: var(--space-m);
+  padding-block-start: var(--space-s);
+  border-block-start: 2px solid var(--grey-300);
+  color: var(--grey-800);
+  font-size: var(--step--1);
 }
